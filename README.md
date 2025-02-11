@@ -1,0 +1,1 @@
+This is a project which incolves python packages like pandas, plotly, numpy to process the bank statement and deployed intercative an app using streamlit where we analyse and get insight about the expense we did on month basis 
