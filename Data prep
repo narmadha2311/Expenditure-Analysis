@@ -1,0 +1,179 @@
+
+import plotly as ply
+import pandas as pd
+import numpy as np 
+#import chart_studio.plotly as py
+import plotly.figure_factory as ff
+df = pd.read_excel('~/Documents/spaceship-titanic/bank_stmt.xls',header=20)
+
+df1 = df.loc[1:799]
+df1.info()
+
+
+# Now dataset is ready , the actual tranaction lies between row 20 to 820 whch is selected and now , the feature deposit AMt and Withdrawl Amt is having some null rows which has to be treated . 
+
+# Using isna() to count NaNs in each column
+nan_count = df1.isna().sum()
+print("NaN count per column using isna():") 
+print(nan_count)
+
+df1 = df1.fillna(0)
+
+count = df1.isna().sum()
+print("NaN count per column using afer treating:") 
+print(count)
+
+
+# """
+# following things need to be done as a part of data processing before proceeding with the app creation 
+# 1. treating null values (done) 
+# 2. making use of date column 
+# 3. classifying the diff types of transactions 
+# 
+# 
+
+#conerting date column to datetime format 
+df1['Date'] = pd.to_datetime(df1['Date'],format='%d/%m/%y')
+
+#df1['Value'] = df1['Date'].astype('float')
+df1.info()
+
+df1['tt'] = df1['Narration'].copy()
+
+# created new column based on type of transaction made
+
+df1['tt'] = df1.tt.str.replace(r'(^.*POS.*$)', 'Debit_card')
+df1['tt'] = df1.tt.str.replace(r'(^.*UPI.*$)', 'UPI')
+df1['tt'] = df1.tt.str.replace(r'(^.*EMI.*$)', 'EMI')
+df1['tt'] = df1.tt.str.replace(r'(^.*IMPS.*$)', 'IMPS')
+df1['tt'] = df1.tt.str.replace(r'(^.*EAW.*$)', 'ATM_Witdrawl')
+df1['tt'] = df1.tt.str.replace(r'(^.*NEFT.*$)', 'NEFT')
+df1['tt'] = df1.tt.str.replace(r'(^.*NWD.*$)', 'ATM_Witdrawl')
+df1['tt'] = df1.tt.str.replace(r'(^.*HGA.*$)', 'bill_payment')
+df1['tt'] = df1.tt.str.replace(r'(.*PAYU.*$)', 'PAYU_payment')
+df1['tt'] = df1.tt.str.replace(r'(.*RAZP.*$)', 'RAZR_payment')
+df1['tt'] = df1.tt.str.replace(r'(.*INTEREST.*$)', 'Interest_payment')
+df1['tt'] = df1.tt.str.replace(r'(.*TPT.*$)', 'Money_transfer')
+df1['tt'] = df1.tt.str.replace(r'(^.*ATW.*$)', 'ATM_Witdrawl')
+df1['tt'] = df1.tt.str.replace(r'(^.*ACH.*$)', 'Auto_transfer')
+df1['tt'] = df1.tt.str.replace(r'(.*PAYTM.*$)', 'PAYTM_payment')
+
+
+df1['tt'].unique()
+
+
+df1.info()
+
+# created new column showing the purpose of transaction/expense  
+
+Grocery =['RICE','ANNAM','GANESAN','BUNDL','GROCERY','AMAZONPAYGROCERY','INSTAMART','LATHAHARINIM','DMART','KPN','BRAMMA','SWIGGY.STORES','ZEPTO','JASMINE']
+Salary = ['VERIZON']
+Telecom = ['JIO','AIRTEL','TATAPLAY']
+Restaurants = ['ZOMATO','GEETHAM','NANDHANA','CHAI','TEA','PAUSE','HOTEL','KITCHEN','CUISINE','FOOD','SHAWARMA']
+Self_Care = ['AJIO','NYKAA','TONI','TEXTILES','BRIDAL']
+Medical =  ['CLOUDNINE','PHARMACY','MEDICAL','PAVENDAN','HEALTH']
+Travel = ['IRCTC']
+Self_Care = ['AJIO','NYKAA','TONI','TEXTILES','BRIDAL']
+House_keeping = ['BHUVANESWARI','URBANCLAP','SKYFALL']
+Ecom = ['AMAZON','FLIPKART']
+Kids_Education = ['LITTLEMILLENIUM','NARRAYANAN88','RAACK','ANTHONYRAJA']
+cash_withdrawl = ['ATW','NWD','EAW'] 
+money_transfers = ['ANJANI','SUREZH12','DINEZH','EZHIL','CAREFI']
+
+df1['expense'] = df1['Narration'].map(lambda x:'salary' if any(sub in x for sub in Salary) else 'other')
+#df1['expense'] = np.where(df1['Narration'].str.contains('|'.join(Grocery),case=False),'grocery','other')
+df1.loc[df1['Narration'].str.contains('|'.join(Grocery),case=False),'expense'] = 'grocery'
+df1.loc[df1['Narration'].str.contains('|'.join(Salary),case=False),'expense'] = 'salary'
+df1.loc[df1['Narration'].str.contains('|'.join(Telecom),case=False),'expense'] = 'telecom'
+df1.loc[df1['Narration'].str.contains('|'.join(Restaurants),case =  False),'expense'] = 'restaurant'
+df1.loc[df1['Narration'].str.contains('|'.join(Self_Care),case =  False),'expense'] = 'self_care'
+df1.loc[df1['Narration'].str.contains('|'.join(Medical),case =  False),'expense'] = 'medical'
+df1.loc[df1['Narration'].str.contains('|'.join(Travel),case =  False),'expense'] = 'travel'
+df1.loc[df1['Narration'].str.contains('|'.join(House_keeping),case =  False),'expense'] = 'House_keeping'
+df1.loc[df1['Narration'].str.contains('|'.join(Ecom),case =  False),'expense'] = 'Ecom_purchase'
+df1.loc[df1['Narration'].str.contains('|'.join(Kids_Education),case =  False),'expense'] = 'kid_education'
+df1.loc[df1['Narration'].str.contains('|'.join(cash_withdrawl),case =  False),'expense'] = 'cash'
+#df1.loc[df1['Withdrawal Amt.'] < 150 , 'expense'] = 'unaccountable'
+df1.loc[(df1['Withdrawal Amt.'] < 200 )  & (df1['expense'].str.contains('other')), 'expense'] = 'unaccountables'
+df1.loc[df1['Narration'].str.contains('REFUND') , 'expense'] = 'refunds'
+df1.loc[(df1['Withdrawal Amt.'] > 1) & (df1['Narration'].str.contains('|'.join(money_transfers)) )  , 'expense'] = 'money_transfers'
+
+
+# In[14]:
+
+
+# new df to show only closing balance of every month 
+payroll = df1[df1['Narration'].str.contains('PAYROLL')]
+salary_index = df1[df1['Narration'].str.contains('SALARY',case=False,na=False)].index
+
+n = salary_index - 2
+baldf = []
+for i in n:
+    #baldf.append(df1.iloc[i])
+    bal = df1.iloc[i]
+    #if bal.expense = 'salary'
+    
+cldf = pd.DataFrame(baldf)
+print(payroll)
+
+
+# In[15]:
+
+
+# creating new column called month 
+
+df1['Date'] = pd.to_datetime(df1['Date'],format='%Y-%m-%d') 
+df1['Month'] = df1['Date'].apply(lambda x:x.strftime('%B'))
+print(df1.Month.unique())
+print(df1.info())
+#
+#df1.loc[df1['expense'].str.contains('other',case=False) & df1['expense'].str.contains('other') ]
+#df1.loc[ (df1['Withdrawal Amt.'] > 1) & (df1['Narration'].str.contains('|'.join(money_transfers)) ) ]
+
+
+# In[ ]:
+
+
+fig = px.sunburst(df, path=['Month', 'expense'],  
+                  values='totalamt') 
+fig.show()
+
+
+# In[25]:
+
+
+filter6 = df1[df1['Month'] == 'October']
+filter7 = filter6[filter6["Narration"].str.contains("PAYROLL") == False]
+salary_index = filter7[filter7['Narration'].str.contains('SALARY',case=False,na=False)].index
+n = salary_index - 2
+filter61 = filter7.loc[n]
+
+f2 = filter61['Closing Balance']
+f2
+
+
+# In[77]:
+
+
+df1['totalamount'] = df1['Withdrawal Amt.'] + df1['Deposit Amt.']
+df1.to_csv('~/Documents/spaceship-titanic/file3.csv')
+metdf = df1.groupby(['Month','tt','expense',], sort=True)['totalamount'].sum().reset_index(name ='Total Amount')
+#metdf.head(50)
+
+df1.info()
+
+fig = px.bar(metdf, x="tt", y="Total Amount",
+             color="expense",hover_data=['Month'],
+             barmode = 'stack')
+  
+fig.show()
+
+
+# In[70]:
+
+
+# expenses analysis
+newdf = df1.groupby(['expense','Month'], sort=True)['Withdrawal Amt.'].sum().reset_index(name ='Total Amount')
+fig = px.bar(newdf, x="Month",y='Total Amount',color = 'expense',barmode = 'group') 
+
+fig.show()
