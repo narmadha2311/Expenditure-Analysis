@@ -1,0 +1,79 @@
+
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+
+df2 = pd.read_csv('~/Documents/spaceship-titanic/file3.csv',header = 0,parse_dates=["Date"])
+tt_list = list(df2.tt.unique())[::-1]
+expense_list = list(df2.expense.unique())[::-1]
+#month = df2['Date'].dt.strftime("%m/%y").unique()
+month = df2['Month'].unique()
+month1 = df2['Month'].unique()
+
+#print (df2.dtypes)
+st.title("Expenditure Analysis")
+st.markdown("This app analyzes family/personal expenses from bank statement")
+
+#plot 1
+select_month = st.selectbox('Select a month',month)
+filtered_df =  df2[df2['Month'] == select_month]
+fig = px.bar(filtered_df, x="Month",y='totalamount',color = 'expense',barmode = 'group',title=f'Monthly expenditure')
+
+#plot.show()
+st.plotly_chart(fig)
+
+#plot 2
+select_tt = st.selectbox('Select a transaction type',tt_list)
+filter2 = df2[df2['tt']==select_tt]
+fig2 = px.bar(filter2, x="Month",y='totalamount',color = 'expense',barmode = 'group',title=f'mode of transaction')
+st.plotly_chart(fig2)
+
+#plot 3.1 :
+# To display single metric (highest spent)
+select1_month = st.selectbox('Select one',month1)
+col1, col2,col3 = st.columns([2, 3,4])
+#filter3 = df2.groupby(['Month', 'expense'])['totalamount'].sum()
+#filter13 =
+
+filter3 = df2[df2['Month'] == select1_month]
+#filter13 = filter3.iloc(filter3['Withdrawal Amt.'].idmax)
+f = float(filter3['Withdrawal Amt.'].max())
+y = filter3[filter3['Withdrawal Amt.'] == filter3['Withdrawal Amt.'].max()]
+#z = y[['Withdrawal Amt.']]
+z = y.expense.to_string(index=False)
+col3.metric(label='Spent Highest on {}'.format(z), value=f,border=True)
+
+# To display single metric (least spent)
+filter4 = df2[df2['Month'] == select1_month]
+#filter13 = filter3.iloc(filter3['Withdrawal Amt.'].idmax)
+filter49 = filter4.groupby(['expense'])['Withdrawal Amt.'].sum().reset_index()
+filter5 = filter49[filter49['Withdrawal Amt.'] != 0]
+f1 = float(filter5['Withdrawal Amt.'].min())
+y1 = filter5[filter5['Withdrawal Amt.'] == filter5['Withdrawal Amt.'].min()]
+
+#print (z1)
+z1 = y1.expense.to_string(index=False)
+#print(filter5)
+col2.metric(label='Spent Lowest on {}'.format(z1), value=f1,border=True)
+
+# Display monthly closing balance
+
+filter6 = df2[df2['Month'] == select1_month]
+filter7 = filter6[filter6["Narration"].str.contains("PAYROLL") == False]
+salary_index = filter7[filter7['Narration'].str.contains('SALARY',case=False,na=False)].index
+n = salary_index - 2
+filter61 = filter7.loc[n]
+
+
+f2 = float(filter61['Closing Balance'])
+col1.metric(label='Closing balance', value=f2,border=True)
+
+
+
+
+
